@@ -15,7 +15,23 @@ pub fn fibonacci(n: u32) -> u32 {
     //
     // Hint: use a `Vec` to memoize the results you have already calculated
     // so that you don't have to recalculate them several times.
-    todo!()
+    if n == 0 {
+        return 0;
+    }
+    if n == 1 {
+        return 1;
+    }
+    let mut nums: Vec<u32> = Vec::with_capacity(n as usize);
+    nums.push(0);
+    nums.push(1);
+    for idx in 2..=n {
+        let idx1 = (idx - 1) as usize;
+        let idx2 = (idx - 2) as usize;
+        nums.push(nums.get(idx1).unwrap_or(&1u32) + nums.get(idx2).unwrap_or(&0u32))
+    }
+    *nums
+        .get(n as usize)
+        .expect("the nth fibonacci number should be available")
 }
 
 #[cfg(test)]
