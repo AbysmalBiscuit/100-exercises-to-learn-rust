@@ -2,15 +2,56 @@
 //  accept connections on both of them concurrently, and always reply to clients by sending
 //  the `Display` representation of the `reply` argument as a response.
 use std::fmt::Display;
+use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpListener;
+
+// My original solution
+// pub async fn fixed_reply<T>(first: TcpListener, second: TcpListener, reply: T)
+// where
+//     // `T` cannot be cloned. How do you share it between the two server tasks?
+//     T: Display + Send + Sync + 'static,
+// {
+//     let formatted_reply = format!("{}", reply);
+//     let handler1 = tokio::spawn(send_reply(first, formatted_reply.clone()));
+//     let handler2 = tokio::spawn(send_reply(second, formatted_reply));
+//     tokio::join!(handler1, handler2);
+// }
+//
+// async fn send_reply(listener: TcpListener, formatted_reply: String) -> Result<(), anyhow::Error> {
+//     loop {
+//         let (mut socket, _) = listener.accept().await?;
+//         let (_, mut writer) = socket.split();
+//         let mut reply_bytes = formatted_reply.as_bytes();
+//         tokio::io::copy(&mut reply_bytes, &mut writer)
+//             .await
+//             .unwrap();
+//     }
+// }
 
 pub async fn fixed_reply<T>(first: TcpListener, second: TcpListener, reply: T)
 where
     // `T` cannot be cloned. How do you share it between the two server tasks?
     T: Display + Send + Sync + 'static,
 {
-    todo!()
+    let reply = Arc::new(reply);
+    let handler1 = tokio::spawn(send_reply(first, Arc::clone(&reply)));
+    let handler2 = tokio::spawn(send_reply(second, reply));
+    tokio::join!(handler1, handler2);
+}
+
+async fn send_reply<T>(listener: TcpListener, reply: Arc<T>) -> Result<(), anyhow::Error>
+where
+    T: Display + Send + Sync + 'static,
+{
+    loop {
+        let (mut socket, _) = listener.accept().await?;
+        let (_, mut writer) = socket.split();
+        writer
+            .write_all(format!("{}", reply).as_bytes())
+            .await
+            .unwrap();
+    }
 }
 
 #[cfg(test)]
