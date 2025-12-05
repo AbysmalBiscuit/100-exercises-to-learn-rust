@@ -4,4 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ticket_fields = { path = "../../../helpers/ticket_fields" }
+
+anyhow = { version = "1" }
+thiserror = { version = "2" }
 tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+warp = { version = "0.4", features = ["server"] }
